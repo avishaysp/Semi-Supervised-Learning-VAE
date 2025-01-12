@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
 
 HIDDEN_DIM = 600
 
@@ -38,3 +36,7 @@ class VAE(nn.Module):
         recon_x = self.decode(z)
         return recon_x, mu, logvar
 
+def vae_loss(recon_x, x, mu, logvar):
+    recon_loss = nn.functional.binary_cross_entropy(recon_x, x, reduction='sum')
+    kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return recon_loss + kl_divergence
