@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 import random
 import os
 import pickle
+import matplotlib.pyplot as plt
 
 from data_load import get_fashion_mnist, get_labeled_data, get_mnist
 from vae import VAE, extract_latent_features, train_vae
@@ -14,8 +15,8 @@ from vae import VAE, extract_latent_features, train_vae
 MNIST_INPUT_DIM = 784
 LATENT_DIM = 50
 BATCH_SIZE = 64
-EPOCHS = 50
-LEARNING_RATE = 1e-3
+EPOCHS = 20
+LEARNING_RATE = 1e-4
 LABEL_COUNTS = [100, 600, 1000, 3000]
 SEED = 42
 
@@ -27,6 +28,19 @@ def set_seed():
     random.seed(SEED)
     torch.backends.cudnn.deterministic = True
 
+def plot_losses(train_losses, val_losses):
+    plt.figure(figsize=(10, 6))
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Losses')
+    plt.legend()
+    plt.grid()
+    plt.savefig('models/loss_plot.png')
+    plt.close()
+    print("Loss plot saved as models/loss_plot.png")
+
 def main():
     set_seed()
     
@@ -35,16 +49,22 @@ def main():
 
     os.makedirs("models", exist_ok=True)
 
-    # First train VAE on MNIST
-    mnist_train_loader, _ = get_mnist()
+    # Get train and validation loaders for MNIST
+    mnist_train_loader, mnist_val_loader = get_mnist()
+    
     vae = VAE(MNIST_INPUT_DIM, LATENT_DIM).to(device)
     optimizer = optim.Adam(vae.parameters(), lr=LEARNING_RATE)
     
     print("Training VAE on MNIST...")
-    train_vae(vae, mnist_train_loader, optimizer, device, EPOCHS)
+    train_losses, val_losses = train_vae(vae, mnist_train_loader, mnist_val_loader, optimizer, device, EPOCHS)
+    
+    # Plot and save the losses
+    plot_losses(train_losses, val_losses)
     
     torch.save(vae.state_dict(), "models/vae_model.pth")
 
+    vae.eval()
+    
     # Now evaluate on FashionMNIST with different label counts
     fashion_train_loader, fashion_test_loader = get_fashion_mnist()
     
