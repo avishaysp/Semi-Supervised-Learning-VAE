@@ -40,3 +40,17 @@ def vae_loss(recon_x, x, mu, logvar):
     recon_loss = nn.functional.binary_cross_entropy(recon_x, x, reduction='sum')
     kl_divergence = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return recon_loss + kl_divergence
+
+def train_vae(vae, dataloader, optimizer, device, epochs=10):
+    vae.train()
+    for epoch in range(epochs):
+        total_loss = 0
+        for x, _ in dataloader:
+            x = x.to(device)
+            optimizer.zero_grad()
+            recon_x, mu, logvar = vae(x)
+            loss = vae_loss(recon_x, x, mu, logvar)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        print(f"Epoch {epoch+1}, Loss: {total_loss/len(dataloader.dataset):.4f}")
