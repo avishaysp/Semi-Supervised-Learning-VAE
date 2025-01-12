@@ -24,6 +24,7 @@ def set_seed():
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     torch.cuda.manual_seed_all(SEED)
+    torch.mps.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
     torch.backends.cudnn.deterministic = True
@@ -88,18 +89,18 @@ def main():
             pickle.dump(svm, f)
         
         predictions = svm.predict(test_latent)
-        accuracy = accuracy_score(test_labels, predictions)
+        error_rate = (1 - accuracy_score(test_labels, predictions)) * 100
         
-        results[num_labels] = accuracy
-        print(f"Test accuracy with {num_labels} labels: {accuracy:.4f}")
+        results[num_labels] = error_rate
+        print(f"Test error rate with {num_labels} labels: {error_rate:.2f}%")
 
     # Save results
     with open("models/results.pkl", 'wb') as f:
         pickle.dump(results, f)
 
     print("\nFinal Results:")
-    for num_labels, accuracy in results.items():
-        print(f"Labels: {num_labels}, Accuracy: {accuracy:.4f}")
+    for num_labels, error_rate in results.items():
+        print(f"Labels: {num_labels}, Error Rate: {error_rate:.2f}%")
 
 if __name__ == '__main__':
     main()
